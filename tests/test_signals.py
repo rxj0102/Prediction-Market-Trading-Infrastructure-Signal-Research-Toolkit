@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any
+
 import numpy as np
+import numpy.typing as npt
 import pytest
 
 from market_sim.markets import MarketConfig, SyntheticMarket, generate_universe
@@ -23,6 +27,8 @@ from signals.research import (
     split_markets,
     trade_eval,
 )
+
+FeatureFn = Callable[[npt.NDArray[np.float64], npt.NDArray[np.int64]], npt.NDArray[np.float64]]
 
 SMALL = MarketConfig(n_markets=12, seed=3, min_length=40, max_length=60, horizon=80)
 
@@ -72,7 +78,7 @@ def test_vw_momentum_weights_by_volume() -> None:
         lambda m, v: volume_weighted_momentum(m, v, 5),
     ],
 )
-def test_features_are_causal(fn) -> None:  # type: ignore[no-untyped-def]
+def test_features_are_causal(fn: FeatureFn) -> None:
     rng = np.random.default_rng(1)
     mid = rng.uniform(0.2, 0.8, 50)
     vol = rng.integers(1, 100, 50)
@@ -91,7 +97,7 @@ def test_features_are_causal(fn) -> None:  # type: ignore[no-untyped-def]
         lambda: volume_weighted_momentum(np.array([0.5]), np.array([1]), 0),
     ],
 )
-def test_feature_validation(call) -> None:  # type: ignore[no-untyped-def]
+def test_feature_validation(call: Callable[[], object]) -> None:
     with pytest.raises(ValueError):  # noqa: PT011
         call()
 
@@ -207,9 +213,9 @@ def test_signal_errors(markets: list[SyntheticMarket]) -> None:
         {"cv_folds": 1},
     ],
 )
-def test_signal_config_validation(kwargs: dict[str, object]) -> None:
+def test_signal_config_validation(kwargs: dict[str, Any]) -> None:
     with pytest.raises(ValueError):  # noqa: PT011
-        SignalConfig(**kwargs)  # type: ignore[arg-type]
+        SignalConfig(**kwargs)
 
 
 def test_trade_eval_hand_computed() -> None:

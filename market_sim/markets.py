@@ -28,9 +28,9 @@ Model (per market, ``L`` trading steps, step index ``i = 0..L-1``):
   depth; depth also wanders over time (lognormal AR(1)). The half spread is
   wider when depth is low and when the mid has just moved.
 * Order flow. Per-step taker volume is Poisson with rate proportional to depth
-  and recent price movement, split into buy/sell flow tilted toward the
-  direction of the next price move (a crude adverse-selection mechanism used
-  by the passive-fill model).
+  and the size of the price move, split into buy/sell flow tilted toward the
+  direction of the move over the same step (a crude adverse-selection
+  mechanism: a resting bid is most likely to be hit while the price falls).
 """
 
 from __future__ import annotations
@@ -85,9 +85,9 @@ class MarketConfig:
     market_kappa: float = 0.08  # speed the price absorbs new information
     sentiment_phi: float = 0.92
     sentiment_sigma: float = 0.12
-    fundamental_noise_sd: float = 0.05
+    fundamental_noise_sd: float = 0.10
     fundamental_noise_phi: float = 0.97
-    poll_noise_sd: float = 0.15
+    poll_noise_sd: float = 0.20
     poll_lag: int = 6
     liquidity_phi: float = 0.95
     liquidity_sigma: float = 0.08
@@ -247,8 +247,10 @@ def generate_market(index: int, config: MarketConfig, rng: np.random.Generator) 
     half_spread = np.clip(np.round(raw_half), 1, config.max_half_spread).astype(np.int64)
     rate = top_depth * config.volume_rate * (1.0 + config.volume_move_sensitivity * abs_move)
     volume = rng.poisson(rate).astype(np.int64)
-    next_move = np.diff(_logit(mid), append=_logit(mid[-1:]))
-    p_sell = _sigmoid(-config.flow_tilt * next_move)
+    # Flow at step i is the taker flow during (i-1, i]; it leans in the direction
+    # of the price move over that same interval (sellers dominate while it falls).
+    move = np.diff(_logit(mid), prepend=_logit(mid[:1]))
+    p_sell = _sigmoid(-config.flow_tilt * move)
     sell_flow = rng.binomial(volume, p_sell).astype(np.int64)
     buy_flow = (volume - sell_flow).astype(np.int64)
 

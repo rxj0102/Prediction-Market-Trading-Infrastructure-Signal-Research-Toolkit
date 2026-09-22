@@ -174,9 +174,9 @@ def section_signals(
                 f"{b.observed_freq:>13.3f} {b.gap:>+7.3f}"
             )
     p("")
-    p("  information coefficient corr(signal, outcome - mid):")
+    p("  information coefficients (Pearson correlation):")
     for k, v in report.information_coefficient.items():
-        p(f"    {k:<24} {v:+.4f}")
+        p(f"    {k:<40} {v:+.4f}")
     p("")
     p(
         "  PnL-if-traded (1 contract toward the edge, hold to resolution, "
@@ -334,26 +334,30 @@ def section_sensitivity(
         "(new markets, refit, aggressive backtest) while varying those assumptions:"
     )
     p(
-        f"  {'analyst noise':>13} {'sentiment':>9} {'impact':>6} {'Brier comp-mkt':>15} "
-        f"{'IC edge':>8} {'PnL $':>10} {'Sharpe(d)':>9} {'maxDD':>7}"
+        f"  {'analyst noise':>13} {'sentiment':>9} {'kappa':>5} {'impact':>6} "
+        f"{'Brier comp-mkt':>14} {'IC outcome':>10} {'IC fwd':>7} {'PnL $':>10} "
+        f"{'Sharpe(d)':>9} {'maxDD':>7}"
     )
     rows: list[dict[str, float]] = []
     grid = [
-        (0.05, 0.12, 2.0),
-        (0.10, 0.12, 2.0),
-        (0.20, 0.12, 2.0),
-        (0.10, 0.06, 2.0),
-        (0.10, 0.03, 2.0),
-        (0.10, 0.12, 0.0),
-        (0.10, 0.12, 6.0),
+        (0.05, 0.12, 0.08, 2.0),
+        (0.10, 0.12, 0.08, 2.0),
+        (0.20, 0.12, 0.08, 2.0),
+        (0.10, 0.06, 0.08, 2.0),
+        (0.10, 0.03, 0.08, 2.0),
+        (0.10, 0.12, 0.30, 2.0),
+        (0.10, 0.03, 0.30, 2.0),
+        (0.10, 0.12, 0.08, 0.0),
+        (0.10, 0.12, 0.08, 6.0),
     ]
-    for noise, senti, impact in grid:
+    for noise, senti, kappa, impact in grid:
         mc = MarketConfig(
             n_markets=n_markets,
             seed=seed,
             fundamental_noise_sd=noise,
             poll_noise_sd=2 * noise,
             sentiment_sigma=senti,
+            market_kappa=kappa,
         )
         live = generate_universe(mc)
         hist = generate_universe(replace(mc, n_markets=n_history, seed=seed + HISTORY_SEED_OFFSET))
@@ -362,23 +366,27 @@ def section_sensitivity(
         sigs = {m.market_id: model.compute(m) for m in live}
         res = Backtester(live, sigs, BacktestConfig(impact_ticks_per_depth=impact)).run()
         sheet = build_tearsheet(res, "sensitivity")
+        ics = list(rep.information_coefficient.values())
         row = {
             "analyst_noise": noise,
             "sentiment_sigma": senti,
+            "market_kappa": kappa,
             "impact": impact,
             "brier_gap": rep.scores["composite"].brier - rep.scores["market_mid"].brier,
-            "ic": rep.information_coefficient["edge(composite - mid)"],
+            "ic_outcome": ics[1],
+            "ic_forward": ics[2],
             "pnl": res.total_pnl,
             "sharpe_daily": sheet.sharpe_daily_annualised,
             "max_dd": sheet.max_drawdown,
         }
         rows.append(row)
         p(
-            f"  {noise:>13.2f} {senti:>9.2f} {impact:>6.1f} {row['brier_gap']:>+15.4f} "
-            f"{row['ic']:>+8.3f} {row['pnl']:>+10.2f} {fmt(row['sharpe_daily'], '.2f'):>9} "
-            f"{row['max_dd']:>7.2%}"
+            f"  {noise:>13.2f} {senti:>9.2f} {kappa:>5.2f} {impact:>6.1f} "
+            f"{row['brier_gap']:>+14.4f} {row['ic_outcome']:>+10.3f} {row['ic_forward']:>+7.3f} "
+            f"{row['pnl']:>+10.2f} {fmt(row['sharpe_daily'], '.2f'):>9} {row['max_dd']:>7.2%}"
         )
-    p("  (default configuration: analyst noise 0.10, sentiment 0.12, impact 2.0)")
+    p("  (default configuration: analyst noise 0.10, sentiment 0.12, kappa 0.08, impact 2.0;")
+    p("   kappa = share of the gap to the latent probability the price closes each step)")
     return rows
 
 

@@ -15,8 +15,9 @@ Pipeline
 
 4. Mispricing / edge = model probability - market mid.
 5. Out-of-sample evaluation on the test markets: Brier score, log loss,
-   calibration curve, Murphy decomposition, ECE, information coefficient and a
-   simple "PnL if traded" check (1 contract, hold to resolution).
+   calibration curve, Murphy decomposition, ECE, information coefficients
+   (against the resolved outcome and against the short-horizon price change)
+   and a simple "PnL if traded" check (1 contract, hold to resolution).
 
 Neither model fits an intercept by default: the features are centred, and with
 only a few dozen resolved markets an intercept mostly learns the training
@@ -85,6 +86,7 @@ class SignalConfig:
     cv_folds: int = 5
     fit_intercept: bool = False
     edge_threshold: float = 0.05
+    forward_horizon: int = 12  # steps ahead for the short-horizon IC
     n_bins: int = 10
 
     def __post_init__(self) -> None:
@@ -96,6 +98,8 @@ class SignalConfig:
             raise ValueError("l2_grid must be a non-empty tuple of non-negative values")
         if self.cv_folds < 2:
             raise ValueError("cv_folds must be >= 2")
+        if self.forward_horizon < 1:
+            raise ValueError("forward_horizon must be >= 1")
 
 
 def market_features(market: SyntheticMarket, config: SignalConfig) -> dict[str, FloatArray]:
@@ -359,7 +363,7 @@ def evaluate(
         raise ValueError("need at least one test market")
     cfg = model.config
     cols: dict[str, list[FloatArray]] = {
-        k: [] for k in ("mid", "info", "comp", "true", "y", "bid", "ask", "midx")
+        k: [] for k in ("mid", "info", "comp", "true", "y", "bid", "ask", "midx", "fwd")
     }
     first_dir: list[FloatArray] = []
     for j, m in enumerate(test_markets):
@@ -374,6 +378,11 @@ def evaluate(
         cols["bid"].append(touch[:, 0])
         cols["ask"].append(touch[:, 1])
         cols["midx"].append(np.full(len(idx), float(j)))
+        ahead = idx + cfg.forward_horizon
+        fwd = np.full(len(idx), np.nan)
+        ok = ahead < m.length
+        fwd[ok] = m.mid[ahead[ok]] - m.mid[idx[ok]]
+        cols["fwd"].append(fwd)
         # One trade per market: the first sampled step where |edge| clears the bar.
         edge = sig.edge[idx]
         fd = np.zeros(len(idx))
@@ -394,9 +403,13 @@ def evaluate(
         )
     }
     realized_move = y - mid
+    has_fwd = ~np.isnan(c["fwd"])
     ic = {
-        "mispricing(info - mid)": float(np.corrcoef(c["info"] - mid, realized_move)[0, 1]),
-        "edge(composite - mid)": float(np.corrcoef(c["comp"] - mid, realized_move)[0, 1]),
+        "info-mid vs outcome-mid": float(np.corrcoef(c["info"] - mid, realized_move)[0, 1]),
+        "edge vs outcome-mid": float(np.corrcoef(c["comp"] - mid, realized_move)[0, 1]),
+        f"edge vs next-{cfg.forward_horizon}-step mid change": float(
+            np.corrcoef((c["comp"] - mid)[has_fwd], c["fwd"][has_fwd])[0, 1]
+        ),
     }
     edge_all = c["comp"] - mid
     dir_all = np.where(np.abs(edge_all) > cfg.edge_threshold, np.sign(edge_all), 0.0)

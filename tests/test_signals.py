@@ -187,6 +187,8 @@ def test_signal_model_fit_compute_evaluate(markets: list[SyntheticMarket]) -> No
         assert sum(b.count for b in score.bins) == report.n_obs
     assert set(report.coefficients["composite"]) == set(COMPOSITE_FEATURES)
     assert len(report.trade_evals) == 2
+    assert len(report.information_coefficient) == 3
+    assert all(-1.0 <= v <= 1.0 for v in report.information_coefficient.values())
 
 
 def test_signal_model_single_l2_and_intercept(markets: list[SyntheticMarket]) -> None:
@@ -211,6 +213,7 @@ def test_signal_errors(markets: list[SyntheticMarket]) -> None:
         {"l2_grid": ()},
         {"l2_grid": (-1.0,)},
         {"cv_folds": 1},
+        {"forward_horizon": 0},
     ],
 )
 def test_signal_config_validation(kwargs: dict[str, Any]) -> None:

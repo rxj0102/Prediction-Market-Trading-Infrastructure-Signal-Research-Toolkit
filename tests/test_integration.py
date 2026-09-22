@@ -121,6 +121,6 @@ def model_free_signal(m: SyntheticMarket) -> MarketSignal:
 def test_sensitivity_section_small() -> None:
     lines: list[str] = []
     rows = main.section_sensitivity(lines.append, seed=4, n_markets=4, n_history=12)
-    assert len(rows) == 7
+    assert len(rows) == 9
     assert all(np.isfinite(r["pnl"]) for r in rows)
     assert any("analyst noise" in x for x in lines)

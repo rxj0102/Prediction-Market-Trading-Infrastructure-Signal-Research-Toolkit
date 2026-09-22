@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prediction-market-trading-engine"
+version = "0.1.0"
+description = "Synthetic prediction-market simulator, signal research, execution backtester and risk monitoring toolkit."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "rxj0102" }]
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4", "pytest-cov>=4.1", "ruff>=0.4", "mypy>=1.8"]
+
+[tool.setuptools.packages.find]
+include = ["market_sim*", "signals*", "execution*", "monitoring*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF", "NPY", "C4", "PT"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["market_sim", "signals", "execution", "monitoring", "main.py", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.coverage.run]
+branch = true
+source = ["market_sim", "signals", "execution", "monitoring", "main"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+fail_under = 90

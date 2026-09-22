@@ -82,12 +82,12 @@ class MarketConfig:
     initial_info_sd: float = 0.12  # sd of W_0 (total variance is 1)
     news_prob: float = 0.03
     news_scale: float = 4.0
-    market_kappa: float = 0.12  # speed the price absorbs new information
+    market_kappa: float = 0.08  # speed the price absorbs new information
     sentiment_phi: float = 0.92
-    sentiment_sigma: float = 0.10
-    fundamental_noise_sd: float = 0.25
+    sentiment_sigma: float = 0.12
+    fundamental_noise_sd: float = 0.05
     fundamental_noise_phi: float = 0.97
-    poll_noise_sd: float = 0.45
+    poll_noise_sd: float = 0.15
     poll_lag: int = 6
     liquidity_phi: float = 0.95
     liquidity_sigma: float = 0.08

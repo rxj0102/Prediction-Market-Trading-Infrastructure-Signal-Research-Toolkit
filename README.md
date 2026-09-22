@@ -23,7 +23,7 @@ binary event contracts:
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt        # numpy + pytest, pytest-cov, ruff, mypy
 
-python main.py                              # full end-to-end run (about 10 s), prints everything
+python main.py                              # full end-to-end run (~15 s), prints everything
 python -m pytest --cov                      # tests + branch coverage (fails under 90%)
 ruff check . && ruff format --check .       # lint / format
 python -m mypy                              # strict type checking

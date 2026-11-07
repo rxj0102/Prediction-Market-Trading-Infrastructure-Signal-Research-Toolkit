@@ -1,5 +1,7 @@
 # Prediction Market Trading Engine
 
+[![CI](https://github.com/rxj0102/Prediction-Market-Trading-Infrastructure-Signal-Research-Toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/rxj0102/Prediction-Market-Trading-Infrastructure-Signal-Research-Toolkit/actions/workflows/ci.yml)
+
 A Python toolkit that runs the full pipeline of an algorithmic trading desk on
 binary event contracts:
 

@@ -63,20 +63,20 @@ tests/         pytest suite (unit + integration)
 
 ### Module 1: Synthetic markets and order book (`market_sim/`)
 
-**Latent information and the "true" probability.** Each market trades for
+**Latent information and the *true* probability.** Each market trades for
 `L` steps (1 step = 1 synthetic hour). A latent information process
 `W_i = W_0 + Σ sqrt(v_s)·ξ_s` accumulates Gaussian news. Most steps carry small
-variance, and with probability `news_prob` a step is a "news" step with
+variance, and with probability `news_prob` a step is a *news* step with
 `news_scale²` times the variance. Variances are normalised to sum to 1. The
 market resolves YES iff `W_L > 0`, where the last increment arrives after
 trading stops. Because the remaining variance `V_i` is known, the exact
 conditional probability is `p_i = Φ(W_i / sqrt(V_i))`. It starts near 0.5
 (`W_0` is small) and is pulled toward 0 or 1 as `V_i → 0`. `p_i` is used only
-as a diagnostic ("oracle"). No strategy code reads it.
+as a diagnostic (*oracle*). No strategy code reads it.
 
 **Market price.** The market's log-odds follow `logit(p_i)` with partial
 adjustment (`anchor += κ·(logit p − anchor)`, κ = `market_kappa`), plus an
-AR(1) "sentiment" term. The mid is the sigmoid of that sum, clipped to
+AR(1) *sentiment* term. The mid is the sigmoid of that sum, clipped to
 [0.02, 0.98]. The price therefore **under-reacts to news and carries
 mean-reverting noise**. These are the two inefficiencies the strategy can
 exploit, and they exist because the generator puts them there.
@@ -114,14 +114,14 @@ to depth.
 
 * **Train/evaluate split by market, never by time step.** The models are fit
   on a separate **historical universe** of 200 resolved synthetic markets
-  (seed offset 10,000). The 50 "live" markets are used only for out-of-sample
+  (seed offset 10,000). The 50 *live* markets are used only for out-of-sample
   evaluation and the backtest. Resolved outcomes are the only labels, and each
   market contributes one. The first version trained on half of the 50 live
   markets, which gave 25 labels. That overfit: an intercept learned the
   training set's YES/NO imbalance, and momentum coefficients cancelled each
   other out. A desk would calibrate on a long history of resolved markets,
   which is what the historical universe stands in for.
-* **Info model** (the "model-implied probability"): L2 logistic regression of
+* **Info model** (the *model-implied probability*): L2 logistic regression of
   the outcome on `fundamental_z` and `poll_z`. It never sees the price.
 * **Composite model** (the traded signal) is a market-anchored correction:
   `logit q = logit(mid) + b1·(info_logit − logit(mid)) + b2·momentum + b3·mean_reversion + b4·vw_momentum`.
@@ -227,7 +227,7 @@ same mispricing could be harvested repeatedly at no extra cost.
   for a cooldown, after which the high-water mark is rebased.
 * **Tear sheet.** Contents:
   * equity curve and drawdown series;
-  * total return, and Sharpe computed hourly (×√8760) and on 24-step "days"
+  * total return, and Sharpe computed hourly (×√8760) and on 24-step *days*
     (×√365);
   * max drawdown and max gross exposure;
   * hit rate (share of traded markets with positive PnL);
@@ -340,7 +340,7 @@ These are stated plainly because they bound what the output can support.
   world has *some* exploitable signal. Treat the default results as a
   demonstration of the machinery, not as evidence.
 * The historical calibration universe comes from the *same* data-generating
-  process as the live markets. "Out-of-sample" here means new draws, not a
+  process as the live markets. *Out-of-sample* here means new draws, not a
   new regime.
 
 **The order book is a stylised reconstruction, not a model of real liquidity.**
